@@ -50,6 +50,8 @@ public class AuthMisReportResEntity {
 
     @Column(name = "asa_gateway", length = 255)
     private String asaGateway;
+    
+    
 
     public Integer getSno() {
         return sno;
@@ -99,13 +101,4 @@ public class AuthMisReportResEntity {
         return asaGateway;
     }
     
-    private String getErrCode;
-    private String getErrInfo;
-    
-    public String getErrCode() {
-    	    return getErrCode;
-    }
-    public String getErrInfo() {
-	    return getErrInfo;
-}
 }
