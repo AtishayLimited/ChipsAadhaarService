@@ -89,8 +89,10 @@ public class AuthMisReportReqEntity {
 
     @Column(name = "asa_gateway", length = 255)
     private String asaGateway;
+    
+    
 
-    public Integer getSno() {
+	public Integer getSno() {
         return sno;
     }
 

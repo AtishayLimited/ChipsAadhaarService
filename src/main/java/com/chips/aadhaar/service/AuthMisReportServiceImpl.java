@@ -1,6 +1,5 @@
 package com.chips.aadhaar.service;
 
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -30,7 +29,6 @@ import com.chips.aadhaar.repository.AuthMisReportReqRepository;
 import com.chips.aadhaar.repository.AuthMisReportResRepository;
 import com.chips.aadhaar.util.AuthMisReportSpecification;
 
-
 /**
  * Consolidated AuthMIS business service.
  *
@@ -58,8 +56,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 	private static final DateTimeFormatter SUSPECTED_INPUT_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	private static final DateTimeFormatter SUSPECTED_OUTPUT_DATE = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 
-	public AuthMisReportServiceImpl(AuthMisReportReqRepository authReqRepository, AuthMisReportResRepository authResRepository,
-			AuthMisReportClientMasterRepository clientMasterRepository) {
+	public AuthMisReportServiceImpl(AuthMisReportReqRepository authReqRepository,
+			AuthMisReportResRepository authResRepository, AuthMisReportClientMasterRepository clientMasterRepository) {
 		this.authReqRepository = authReqRepository;
 		this.authResRepository = authResRepository;
 		this.clientMasterRepository = clientMasterRepository;
@@ -108,12 +106,13 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		List<AuthMisReportReqEntity> requests = dashboard_loadRequests(requestSpec);
 
 		Map<String, AuthMisReportReqEntity> requestByTxn = requests.stream().filter(r -> r.getTxn() != null)
-				.collect(Collectors.toMap(AuthMisReportReqEntity::getTxn, Function.identity(), (oldValue, newValue) -> newValue));
+				.collect(Collectors.toMap(AuthMisReportReqEntity::getTxn, Function.identity(),
+						(oldValue, newValue) -> newValue));
 
 		List<AuthMisClientMasterEntity> clients = clientMasterRepository.findAll();
 
-		Map<String, AuthMisClientMasterEntity> clientMap = clients.stream().collect(
-				Collectors.toMap(AuthMisClientMasterEntity::getClientId, Function.identity(), (oldValue, newValue) -> oldValue));
+		Map<String, AuthMisClientMasterEntity> clientMap = clients.stream().collect(Collectors
+				.toMap(AuthMisClientMasterEntity::getClientId, Function.identity(), (oldValue, newValue) -> oldValue));
 
 		DashboardSummaryDto summary = dashboard_buildSummary(responses);
 
@@ -196,7 +195,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 
 	private List<AuthenticationTrendDto> dashboard_buildTrend(List<AuthMisReportResEntity> responses) {
 
-		Map<LocalDate, List<AuthMisReportResEntity>> grouped = responses.stream().filter(r -> r.getCreationDate() != null)
+		Map<LocalDate, List<AuthMisReportResEntity>> grouped = responses.stream()
+				.filter(r -> r.getCreationDate() != null)
 				.collect(Collectors.groupingBy(r -> r.getCreationDate().toLocalDate()));
 
 		return grouped.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> {
@@ -306,15 +306,16 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 
 	private List<AsaPerformanceDto> dashboard_buildAsaPerformance(List<AuthMisReportResEntity> responses) {
 
-		Map<String, List<AuthMisReportResEntity>> grouped = responses.stream().collect(Collectors.groupingBy(response -> {
+		Map<String, List<AuthMisReportResEntity>> grouped = responses.stream()
+				.collect(Collectors.groupingBy(response -> {
 
-			if (response.getAsaGateway() == null || response.getAsaGateway().isBlank()) {
+					if (response.getAsaGateway() == null || response.getAsaGateway().isBlank()) {
 
-				return "UNKNOWN";
-			}
+						return "UNKNOWN";
+					}
 
-			return response.getAsaGateway();
-		}));
+					return response.getAsaGateway();
+				}));
 
 		return grouped.entrySet().stream().map(entry -> {
 
@@ -335,7 +336,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 	private List<ClientPerformanceDto> dashboard_buildClientPerformance(List<AuthMisReportResEntity> responses,
 			Map<String, AuthMisReportReqEntity> requestByTxn, Map<String, AuthMisClientMasterEntity> clientMap) {
 
-		Map<String, List<AuthMisReportResEntity>> grouped = responses.stream().collect(Collectors.groupingBy(AuthMisReportResEntity::getClientId));
+		Map<String, List<AuthMisReportResEntity>> grouped = responses.stream()
+				.collect(Collectors.groupingBy(AuthMisReportResEntity::getClientId));
 
 		return grouped.entrySet().stream().map(entry -> {
 
@@ -1148,7 +1150,7 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 			 */
 			String currentErrorCode =
 
-					response.getErrCode();
+					response.getErr();
 
 			if (!avgError_hasValue(currentErrorCode)) {
 
@@ -1157,15 +1159,12 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 
 			/*
 			 * ERROR DESCRIPTION
+			 *
+			 * get_err_info has been removed from the database/entity.
+			 * Description is derived from the error code.
 			 */
 			String description =
-
-					response.getErrInfo();
-
-			if (!avgError_hasValue(description)) {
-
-				description = avgError_getErrorDescription(currentErrorCode);
-			}
+					avgError_getErrorDescription(currentErrorCode);
 
 			/*
 			 * RESPONSE TIME
@@ -3399,7 +3398,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		 */
 		Map<String, AuthMisReportReqEntity> requestMap = new HashMap<>();
 		if (!transactionIds.isEmpty()) {
-			Specification<AuthMisReportReqEntity> requestSpecification = (root, query, cb) -> root.get("txn").in(transactionIds);
+			Specification<AuthMisReportReqEntity> requestSpecification = (root, query, cb) -> root.get("txn")
+					.in(transactionIds);
 			List<AuthMisReportReqEntity> requests = authReqRepository.findAll(requestSpecification);
 			for (AuthMisReportReqEntity request : requests) {
 				requestMap.put(request.getTxn(), request);
@@ -3417,7 +3417,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 				responsePage.getTotalElements(), responsePage.getTotalPages());
 	}
 
-	private TransactionDetailDto detail_mapToDto(AuthMisReportResEntity response, AuthMisReportReqEntity request, int page, int size, int index) {
+	private TransactionDetailDto detail_mapToDto(AuthMisReportResEntity response, AuthMisReportReqEntity request,
+			int page, int size, int index) {
 
 		long serialNo = ((long) page * size) + index + 1;
 		String status = detail_getStatus(response);
