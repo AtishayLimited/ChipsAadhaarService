@@ -56,8 +56,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 	private static final DateTimeFormatter SUSPECTED_INPUT_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	private static final DateTimeFormatter SUSPECTED_OUTPUT_DATE = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 
-	public AuthMisReportServiceImpl(AuthMisReportReqRepository authReqRepository,
-			AuthMisReportResRepository authResRepository, AuthMisReportClientMasterRepository clientMasterRepository) {
+	public AuthMisReportServiceImpl(AuthMisReportReqRepository authReqRepository, AuthMisReportResRepository authResRepository,
+			AuthMisReportClientMasterRepository clientMasterRepository) {
 		this.authReqRepository = authReqRepository;
 		this.authResRepository = authResRepository;
 		this.clientMasterRepository = clientMasterRepository;
@@ -68,11 +68,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 	public AuthMisDashboardResponse getDashboard(LocalDate fromDate, LocalDate toDate, String clientId, String authType,
 			String asaGateway) {
 
-		LocalDateTime from = fromDate.atStartOfDay();
-
-		LocalDateTime to = toDate.plusDays(1).atStartOfDay();
-
-		Specification<AuthMisReportResEntity> responseSpec = AuthMisReportSpecification.resDateBetween(from, to);
+		Specification<AuthMisReportResEntity> responseSpec =
+				AuthMisReportSpecification.resDateFilter(fromDate, toDate);
 
 		if (dashboard_hasValue(clientId)) {
 			responseSpec = responseSpec.and(AuthMisReportSpecification.resClientId(clientId));
@@ -93,7 +90,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		 *
 		 * OTP Fingerprint Iris Face Demographic
 		 */
-		Specification<AuthMisReportReqEntity> requestSpec = AuthMisReportSpecification.reqDateBetween(from, to);
+		Specification<AuthMisReportReqEntity> requestSpec =
+				AuthMisReportSpecification.reqDateFilter(fromDate, toDate);
 
 		if (dashboard_hasValue(clientId)) {
 			requestSpec = requestSpec.and(AuthMisReportSpecification.reqClientId(clientId));
@@ -106,13 +104,12 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		List<AuthMisReportReqEntity> requests = dashboard_loadRequests(requestSpec);
 
 		Map<String, AuthMisReportReqEntity> requestByTxn = requests.stream().filter(r -> r.getTxn() != null)
-				.collect(Collectors.toMap(AuthMisReportReqEntity::getTxn, Function.identity(),
-						(oldValue, newValue) -> newValue));
+				.collect(Collectors.toMap(AuthMisReportReqEntity::getTxn, Function.identity(), (oldValue, newValue) -> newValue));
 
 		List<AuthMisClientMasterEntity> clients = clientMasterRepository.findAll();
 
-		Map<String, AuthMisClientMasterEntity> clientMap = clients.stream().collect(Collectors
-				.toMap(AuthMisClientMasterEntity::getClientId, Function.identity(), (oldValue, newValue) -> oldValue));
+		Map<String, AuthMisClientMasterEntity> clientMap = clients.stream().collect(
+				Collectors.toMap(AuthMisClientMasterEntity::getClientId, Function.identity(), (oldValue, newValue) -> oldValue));
 
 		DashboardSummaryDto summary = dashboard_buildSummary(responses);
 
@@ -195,8 +192,7 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 
 	private List<AuthenticationTrendDto> dashboard_buildTrend(List<AuthMisReportResEntity> responses) {
 
-		Map<LocalDate, List<AuthMisReportResEntity>> grouped = responses.stream()
-				.filter(r -> r.getCreationDate() != null)
+		Map<LocalDate, List<AuthMisReportResEntity>> grouped = responses.stream().filter(r -> r.getCreationDate() != null)
 				.collect(Collectors.groupingBy(r -> r.getCreationDate().toLocalDate()));
 
 		return grouped.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> {
@@ -306,16 +302,15 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 
 	private List<AsaPerformanceDto> dashboard_buildAsaPerformance(List<AuthMisReportResEntity> responses) {
 
-		Map<String, List<AuthMisReportResEntity>> grouped = responses.stream()
-				.collect(Collectors.groupingBy(response -> {
+		Map<String, List<AuthMisReportResEntity>> grouped = responses.stream().collect(Collectors.groupingBy(response -> {
 
-					if (response.getAsaGateway() == null || response.getAsaGateway().isBlank()) {
+			if (response.getAsaGateway() == null || response.getAsaGateway().isBlank()) {
 
-						return "UNKNOWN";
-					}
+				return "UNKNOWN";
+			}
 
-					return response.getAsaGateway();
-				}));
+			return response.getAsaGateway();
+		}));
 
 		return grouped.entrySet().stream().map(entry -> {
 
@@ -336,8 +331,7 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 	private List<ClientPerformanceDto> dashboard_buildClientPerformance(List<AuthMisReportResEntity> responses,
 			Map<String, AuthMisReportReqEntity> requestByTxn, Map<String, AuthMisClientMasterEntity> clientMap) {
 
-		Map<String, List<AuthMisReportResEntity>> grouped = responses.stream()
-				.collect(Collectors.groupingBy(AuthMisReportResEntity::getClientId));
+		Map<String, List<AuthMisReportResEntity>> grouped = responses.stream().collect(Collectors.groupingBy(AuthMisReportResEntity::getClientId));
 
 		return grouped.entrySet().stream().map(entry -> {
 
@@ -480,14 +474,12 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		/*
 		 * Date range
 		 */
-		LocalDateTime from = fromDate.atStartOfDay();
-
-		LocalDateTime to = toDate.plusDays(1).atStartOfDay();
 
 		/*
 		 * Base specification
 		 */
-		Specification<AuthMisReportResEntity> specification = AuthMisReportSpecification.resDateBetween(from, to);
+		Specification<AuthMisReportResEntity> specification =
+				AuthMisReportSpecification.resDateFilter(fromDate, toDate);
 
 		/*
 		 * IMPORTANT:
@@ -713,9 +705,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 			return result;
 		}
 
-		Specification<AuthMisReportReqEntity> specification = (root, query, cb) ->
-
-		root.get("txn").in(transactionIds);
+		Specification<AuthMisReportReqEntity> specification =
+				AuthMisReportSpecification.reqTransactionIds(transactionIds);
 
 		List<AuthMisReportReqEntity> requests = authReqRepository.findAll(specification);
 
@@ -1053,16 +1044,12 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		/*
 		 * DATE RANGE
 		 */
-		LocalDateTime from = fromDate.atStartOfDay();
-
-		LocalDateTime to = toDate.plusDays(1).atStartOfDay();
 
 		/*
 		 * BASE SPECIFICATION
 		 */
 		Specification<AuthMisReportResEntity> specification =
-
-				AuthMisReportSpecification.resDateBetween(from, to);
+				AuthMisReportSpecification.resDateFilter(fromDate, toDate);
 
 		/*
 		 * ONLY ERROR TRANSACTIONS
@@ -1408,10 +1395,7 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		}
 
 		Specification<AuthMisReportReqEntity> specification =
-
-				(root, query, cb) ->
-
-				root.get("txn").in(transactionIds);
+				AuthMisReportSpecification.reqTransactionIds(transactionIds);
 
 		List<AuthMisReportReqEntity> requests =
 
@@ -1853,24 +1837,25 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 			toTime = LocalTime.MAX;
 		}
 
-		LocalDateTime fromDateTime = LocalDateTime.of(date, fromTime);
+		// Keep separate final references for use inside lambda expressions.
+		final LocalTime finalFromTime = fromTime;
+		final LocalTime finalToTime = toTime;
 
-		LocalDateTime toDateTime = LocalDateTime.of(date, toTime);
+		Specification<AuthMisReportResEntity> specification;
 
-		/*
-		 * If same time is supplied, consider complete minute.
-		 */
-		if (!toDateTime.isAfter(fromDateTime)) {
+		if (date != null) {
+			LocalDateTime fromDateTime = LocalDateTime.of(date, fromTime);
+			LocalDateTime toDateTime = LocalDateTime.of(date, toTime);
 
-			toDateTime = toDateTime.plusMinutes(1);
+			if (!toDateTime.isAfter(fromDateTime)) {
+				toDateTime = toDateTime.plusMinutes(1);
+			}
+
+			specification = AuthMisReportSpecification.resDateBetween(fromDateTime, toDateTime);
+		} else {
+			// No date filter: load complete database data.
+			specification = AuthMisReportSpecification.noResponseFilter();
 		}
-
-		/*
-		 * Base JPA Specification.
-		 */
-		Specification<AuthMisReportResEntity> specification =
-
-				AuthMisReportSpecification.resDateBetween(fromDateTime, toDateTime);
 
 		/*
 		 * Load response records page by page.
@@ -1895,9 +1880,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 
 		if (!transactionIds.isEmpty()) {
 
-			Specification<AuthMisReportReqEntity> requestSpecification = (root, query, cb) ->
-
-			root.get("txn").in(transactionIds);
+			Specification<AuthMisReportReqEntity> requestSpecification =
+					AuthMisReportSpecification.reqTransactionIds(transactionIds);
 
 			List<AuthMisReportReqEntity> requests = authReqRepository.findAll(requestSpecification);
 
@@ -1911,6 +1895,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		 * Filter service.
 		 */
 		List<AuthMisReportResEntity> filteredResponses = responses.stream()
+
+				.filter(response -> minute_matchesTime(response.getCreationDate(), finalFromTime, finalToTime))
 
 				.filter(response -> {
 
@@ -2280,20 +2266,16 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 	public OddTimeTransactionResponse getOddTimeTransactions(String fromDate, String toDate, String fromTime,
 			String toTime, String authMode, String result, int page, int size) {
 
-		LocalDate startDate = LocalDate.parse(fromDate, ODD_DATE_FORMAT);
-
-		LocalDate endDate = LocalDate.parse(toDate, ODD_DATE_FORMAT);
-
-		LocalDateTime from = startDate.atStartOfDay();
-
-		LocalDateTime to = endDate.plusDays(1).atStartOfDay();
-
 		/*
 		 * -------------------------------------------------- GET REQUEST DATA
 		 * --------------------------------------------------
 		 */
 
-		Specification<AuthMisReportReqEntity> specification = AuthMisReportSpecification.reqDateBetween(from, to)
+		LocalDate oddFromDate = odd_parseNullableDate(fromDate);
+		LocalDate oddToDate = odd_parseNullableDate(toDate);
+
+		Specification<AuthMisReportReqEntity> specification =
+				AuthMisReportSpecification.reqDateFilter(oddFromDate, oddToDate)
 				.and(AuthMisReportSpecification.reqAuthMode(authMode));
 
 		List<AuthMisReportReqEntity> requests = authReqRepository.findAll(specification);
@@ -2303,8 +2285,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		 * --------------------------------------------------
 		 */
 
-		Specification<AuthMisReportResEntity> responseSpecification = (root, query, cb) -> cb.and(
-				cb.greaterThanOrEqualTo(root.get("creationDate"), from), cb.lessThan(root.get("creationDate"), to));
+		Specification<AuthMisReportResEntity> responseSpecification =
+				AuthMisReportSpecification.resDateFilter(oddFromDate, oddToDate);
 
 		List<AuthMisReportResEntity> responses = authResRepository.findAll(responseSpecification);
 
@@ -2328,9 +2310,9 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		 * --------------------------------------------------
 		 */
 
-		LocalTime startTime = odd_parseTime(fromTime, LocalTime.of(23, 0));
+		LocalTime startTime = odd_parseNullableTime(fromTime);
 
-		LocalTime endTime = odd_parseTime(toTime, LocalTime.of(5, 0));
+		LocalTime endTime = odd_parseNullableTime(toTime);
 
 		/*
 		 * -------------------------------------------------- BUILD RECORDS
@@ -2357,9 +2339,14 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 			 * This crosses midnight. ----------------------------------------------
 			 */
 
-			if (!odd_isWithinOddTime(transactionTime, startTime, endTime)) {
+			if (startTime != null || endTime != null) {
 
-				continue;
+				LocalTime effectiveStart = startTime == null ? LocalTime.MIN : startTime;
+				LocalTime effectiveEnd = endTime == null ? LocalTime.MAX : endTime;
+
+				if (!odd_isWithinOddTime(transactionTime, effectiveStart, effectiveEnd)) {
+					continue;
+				}
 			}
 
 			AuthMisReportResEntity response = responseMap.get(request.getTxn());
@@ -2648,22 +2635,16 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 	 * ======================================================
 	 */
 
-	private LocalTime odd_parseTime(String value, LocalTime defaultValue) {
+	private LocalTime odd_parseNullableTime(String value) {
 
 		if (value == null || value.isBlank()) {
-			return defaultValue;
+			return null;
 		}
 
-		try {
-
-			return LocalTime.parse(value, ODD_TIME_FORMAT);
-
-		} catch (Exception e) {
-
-			return defaultValue;
-		}
+		return LocalTime.parse(value, ODD_TIME_FORMAT);
 	}
 
+	
 	/*
 	 * ====================================================== NULL / EMPTY
 	 * ======================================================
@@ -2722,11 +2703,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 			size = 100;
 		}
 
-		LocalDateTime from = fromDate.atStartOfDay();
-
-		LocalDateTime to = toDate.plusDays(1).atStartOfDay();
-
-		Specification<AuthMisReportResEntity> specification = AuthMisReportSpecification.resDateBetween(from, to);
+		Specification<AuthMisReportResEntity> specification =
+				AuthMisReportSpecification.resDateFilter(fromDate, toDate);
 
 		if (subAua_hasValue(clientId)) {
 
@@ -2916,16 +2894,18 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 	public SuspectedAadhaarResponse getSuspectedAadhaarReport(String fromDate, String toDate, String risk,
 			String status, String auaCode, String subAua, String authMode, int page, int size) {
 
-		LocalDateTime from = LocalDate.parse(fromDate, SUSPECTED_INPUT_DATE).atStartOfDay();
-
-		LocalDateTime to = LocalDate.parse(toDate, SUSPECTED_INPUT_DATE).plusDays(1).atStartOfDay();
+		Specification<AuthMisReportReqEntity> requestSpec;
+		Specification<AuthMisReportResEntity> responseSpec;
 
 		/*
 		 * ---------------------------------------------------- AUTH REQUESTS
 		 * ----------------------------------------------------
 		 */
 
-		Specification<AuthMisReportReqEntity> requestSpec = AuthMisReportSpecification.reqDateBetween(from, to)
+		LocalDate suspectedFromDate = suspected_parseDate(fromDate);
+		LocalDate suspectedToDate = suspected_parseDate(toDate);
+
+		requestSpec = AuthMisReportSpecification.reqDateFilter(suspectedFromDate, suspectedToDate)
 				.and(AuthMisReportSpecification.reqAc(auaCode)).and(AuthMisReportSpecification.reqSa(subAua))
 				.and(AuthMisReportSpecification.reqAuthMode(authMode));
 
@@ -2936,7 +2916,7 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		 * ----------------------------------------------------
 		 */
 
-		Specification<AuthMisReportResEntity> responseSpec = AuthMisReportSpecification.resDateBetween(from, to)
+		responseSpec = AuthMisReportSpecification.resDateFilter(suspectedFromDate, suspectedToDate)
 				.and(AuthMisReportSpecification.resErrorTransactions());
 
 		List<AuthMisReportResEntity> errorResponses = authResRepository.findAll(responseSpec);
@@ -3318,13 +3298,11 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		// size = 100;
 		// }
 
-		LocalDateTime from = fromDate.atStartOfDay();
-		LocalDateTime to = toDate.plusDays(1).atStartOfDay();
-
 		/*
-		 * Base specification
+		 * Base specification. If no date is supplied, all available data is loaded.
 		 */
-		Specification<AuthMisReportResEntity> specification = AuthMisReportSpecification.resDateBetween(from, to);
+		Specification<AuthMisReportResEntity> specification =
+				AuthMisReportSpecification.resDateFilter(fromDate, toDate);
 
 		/*
 		 * AUA filter
@@ -3398,8 +3376,8 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		 */
 		Map<String, AuthMisReportReqEntity> requestMap = new HashMap<>();
 		if (!transactionIds.isEmpty()) {
-			Specification<AuthMisReportReqEntity> requestSpecification = (root, query, cb) -> root.get("txn")
-					.in(transactionIds);
+			Specification<AuthMisReportReqEntity> requestSpecification =
+				AuthMisReportSpecification.reqTransactionIds(transactionIds);
 			List<AuthMisReportReqEntity> requests = authReqRepository.findAll(requestSpecification);
 			for (AuthMisReportReqEntity request : requests) {
 				requestMap.put(request.getTxn(), request);
@@ -3417,8 +3395,7 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 				responsePage.getTotalElements(), responsePage.getTotalPages());
 	}
 
-	private TransactionDetailDto detail_mapToDto(AuthMisReportResEntity response, AuthMisReportReqEntity request,
-			int page, int size, int index) {
+	private TransactionDetailDto detail_mapToDto(AuthMisReportResEntity response, AuthMisReportReqEntity request, int page, int size, int index) {
 
 		long serialNo = ((long) page * size) + index + 1;
 		String status = detail_getStatus(response);
@@ -3545,4 +3522,23 @@ public class AuthMisReportServiceImpl implements AuthMisReportService {
 		return value != null && !value.isBlank();
 	}
 
+
+	private LocalDate suspected_parseDate(String value) {
+		if (value == null || value.isBlank()) return null;
+		return LocalDate.parse(value, SUSPECTED_INPUT_DATE);
+	}
+
+	private LocalDate odd_parseNullableDate(String value) {
+		if (value == null || value.isBlank()) return null;
+		return LocalDate.parse(value, ODD_DATE_FORMAT);
+	}
+
+	private boolean minute_matchesTime(LocalDateTime dateTime, LocalTime fromTime, LocalTime toTime) {
+		if (dateTime == null) return false;
+		if (fromTime.equals(LocalTime.MIN) && toTime.equals(LocalTime.MAX)) return true;
+		LocalTime current = dateTime.toLocalTime();
+		if (fromTime.equals(toTime)) return current.equals(fromTime);
+		if (fromTime.isBefore(toTime)) return !current.isBefore(fromTime) && !current.isAfter(toTime);
+		return !current.isBefore(fromTime) || !current.isAfter(toTime);
+	}
 }
