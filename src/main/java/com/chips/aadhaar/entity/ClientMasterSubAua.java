@@ -131,4 +131,27 @@ public class ClientMasterSubAua {
     public LocalDateTime getValidUpto() {
         return validUpto;
     }
+    public String getKycFlag() { return kycFlag; }
+    public String getAuaLk() { return auaLk; }
+    public String getKuaLk() { return kuaLk; }
+    public String getLkFlag() { return lkFlag; }
+    public String getWebFlag() { return webFlag; }
+    public String getRedirectUri() { return redirectUri; }
+    public String getEkycPacketStorageFlag() { return ekycPacketStorageFlag; }
+
+    public void updateDetails(String clientName, String sa, LocalDateTime validUpto,
+            String auaLk, String kuaLk, String redirectUri, String clientType,
+            String kycFlag, String ekycPacketStorageFlag, String lkFlag, String webFlag) {
+        this.clientName = clientName;
+        this.sa = sa;
+        this.validUpto = validUpto;
+        this.auaLk = auaLk;
+        this.kuaLk = kuaLk;
+        this.redirectUri = redirectUri;
+        this.clientType = clientType;
+        this.kycFlag = kycFlag;
+        this.ekycPacketStorageFlag = ekycPacketStorageFlag;
+        this.lkFlag = lkFlag;
+        this.webFlag = webFlag;
+    }
 }
