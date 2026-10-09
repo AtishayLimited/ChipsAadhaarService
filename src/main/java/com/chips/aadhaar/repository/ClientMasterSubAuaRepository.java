@@ -8,8 +8,10 @@ import com.chips.aadhaar.entity.ClientMasterSubAua;
 
 
 
+
 public interface ClientMasterSubAuaRepository
-        extends JpaRepository<ClientMasterSubAua, Integer> {
+        extends JpaRepository<ClientMasterSubAua, Integer >, DashboardQueries  {
 
     List<ClientMasterSubAua> findAllByOrderBySnoDesc();
+    List<ClientMasterSubAua> findByClientId(String clientId);
 }
